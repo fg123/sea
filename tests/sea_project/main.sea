@@ -1,0 +1,9 @@
+// Standard Libraries
+import <stdio>
+
+fun main() {
+	val x = 1
+	val y = 2
+	printf("Hello World %d!", x + y)
+}
+
