@@ -1,0 +1,11 @@
+paneset 0 0 190 52 1 0
+tabset 0 0 190 52 4 1
+paneset 0 1 190 51 1 0
+editor 0 1 190 51 ./src/main.c 0 0
+paneset 0 1 190 51 1 0
+editor 0 1 190 51 ./src/lexer.h 10 0
+paneset 0 1 190 51 1 0
+editor 0 1 190 51 ./src/lexer.c 0 0
+paneset 0 1 190 51 1 0
+editor 0 1 190 51 ./src/token.h 7 0
+
