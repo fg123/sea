@@ -58,7 +58,7 @@ struct VectorHasher {
     int operator()(const std::vector<T> &V) const {
         int hash = V.size();
         for(auto &i : V) {
-          hash ^= std::hash(i);
+          hash ^= std::hash<T>(i);
         }
         return hash;
     }

@@ -42,9 +42,16 @@ class Lexer {
     FileSourceIterator iterator;
     std::string fileName;
 
+    void Expect(char c, std::string errorMessage);
+    char Next(std::string errorMessage);
+
     bool MatchKeyword();
+    bool MatchStringLiteral();
+    bool MatchCharLiteral();
     bool MatchNumber();
     bool MatchIdentifier();
+    bool MatchComment();
+    bool MatchWhitespace();
 
 public:
     Lexer(CompilationContext& context, const std::string& fileName) :

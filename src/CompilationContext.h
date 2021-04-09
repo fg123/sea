@@ -26,7 +26,7 @@ class CompilationContext {
     std::unordered_map<SeaOption, bool> options;
 
 public:
-    std::vector<std::unique_ptr<CompilationUnit>> compilationUnits;
+    // std::vector<std::unique_ptr<CompilationUnit>> compilationUnits;
     std::map<std::string, FileSource> files;
 
     CompilationContext() {}
@@ -43,5 +43,5 @@ public:
         return options[option];
     }
     
-    void DebugPrintHierarchyResolution(TypeDeclaration* type);
+    // void DebugPrintHierarchyResolution(TypeDeclaration* type);
 };

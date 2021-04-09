@@ -3,8 +3,6 @@
 #include "Util.h"
 
 #define FOREACH_TOKEN(OP)               \
-  OP(WHITESPACE),                       \
-  OP(COMMENT),                          \
   OP(IDENTIFIER),                       \
   /* Keywords */                        \
   OP(BREAK),                            \
@@ -91,20 +89,20 @@ extern const char *TokenTypeString[];
 TokenType TokenStringToType(const std::string str);
 
 struct Token {
-  TokenType type;
-  std::string value;
+    TokenType type;
+    std::string value;
 
-  std::string fileName;
-  size_t lineNumber;
-  size_t colNumber;
+    std::string fileName;
+    size_t lineNumber;
+    size_t colNumber;
 
-  Token() {}
-  Token(TokenType type, std::string value, std::string fileName,
+    Token() {}
+    Token(TokenType type, std::string value, std::string fileName,
         size_t lineNumber, size_t colNumber)
-      : type(type), value(std::move(value)), fileName(std::move(fileName)),
+        : type(type), value(std::move(value)), fileName(std::move(fileName)),
         lineNumber(lineNumber), colNumber(colNumber) {}
-    
-  std::string ToString() {
-    return TokenTypeString[type] + ", " + value;
-  }
+
+    std::string ToString() const {
+        return std::string(TokenTypeString[(int)type]) + ", " + value;
+    }
 };

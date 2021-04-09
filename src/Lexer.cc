@@ -4,6 +4,7 @@
 if (iterator.Match(word)) { \
     tokenList.emplace_back(token, iterator.GetLastMatch(), fileName, \
         iterator.GetLastMatchLine(), iterator.GetLastMatchCol()); \
+    return true; \
 }
 
 bool Lexer::MatchKeyword() {
@@ -37,6 +38,9 @@ bool Lexer::MatchKeyword() {
     else MATCH_KEYWORD("try", TokenType::TRY)
     else MATCH_KEYWORD("void", TokenType::VOID)
     else MATCH_KEYWORD("while", TokenType::WHILE)
+    else MATCH_KEYWORD("true", TokenType::TRUE_LITERAL)
+    else MATCH_KEYWORD("false", TokenType::FALSE_LITERAL)
+    else MATCH_KEYWORD("null", TokenType::NULL_LITERAL)
     
     /* Multi Character Matching First */
     else MATCH_KEYWORD("==" ,TokenType::EQ)
@@ -74,11 +78,90 @@ bool Lexer::MatchKeyword() {
     else MATCH_KEYWORD('/' ,TokenType::DIV)
     else MATCH_KEYWORD('^' ,TokenType::XOR)
     else MATCH_KEYWORD('%' ,TokenType::MOD)
-    else return false;
+    return false;
 }
 
 bool IsIdentifierCharacter(char c) {
     return c == '_' || std::isalnum(c);
+}
+
+void Lexer::Expect(char c, std::string errorMessage) {
+    if (!iterator.Match(c)) {
+        throw SeaError(fileName, iterator.GetLine(), iterator.GetCol(), errorMessage);
+    }
+}
+
+char Lexer::Next(std::string errorMessage) {
+    if (iterator.IsEnd()) {
+        throw SeaError(fileName, iterator.GetLine(), iterator.GetCol(), errorMessage);
+    }
+    char c = iterator.Peek();
+    iterator.Advance();
+    return c;
+}
+
+bool Lexer::MatchCharLiteral() {
+    if (iterator.Match('\'')) {
+        size_t startLine = iterator.GetLastMatchLine();
+        size_t startCol = iterator.GetLastMatchCol();
+        if (iterator.Match('\\')) {
+            char next = Next("Expected character to escape!");
+            char actual;
+            switch (next) {
+                case 't': actual = '\t'; break;
+                case 'b': actual = '\b'; break;
+                case 'n': actual = '\n'; break;
+                case 'r': actual = '\r'; break;
+                case '\'': actual = '\''; break;
+                case '"': actual = '"'; break;
+                case '\\': actual = '\\'; break;
+                default:
+                    throw SeaError(fileName, startLine, startCol, "Unexpected escape sequence!");
+            }
+            tokenList.emplace_back(TokenType::CHAR_LITERAL,
+                std::string(1, actual), fileName, startLine, startCol);
+        }
+        else {
+            char next = Next("Expected character in character literal!");
+            tokenList.emplace_back(TokenType::CHAR_LITERAL,
+                std::string(1, next), fileName, startLine, startCol);
+        }
+        Expect('\'', "Expected closing \"'\" for char literal!");
+        return true;
+    }
+    return false;
+}
+
+bool Lexer::MatchStringLiteral() {
+    if (iterator.Match('"')) {
+        size_t startLine = iterator.GetLastMatchLine();
+        size_t startCol = iterator.GetLastMatchCol();
+        std::string strLiteral;
+        while (!iterator.IsEnd() && iterator.Peek() != '\n' && iterator.Peek() != '"') {
+            char c = Next("???");
+            if (c == '\\') {
+                char next = Next("Expected character to escape!");
+                switch (next) {
+                    case 't': c = '\t'; break;
+                    case 'b': c = '\b'; break;
+                    case 'n': c = '\n'; break;
+                    case 'r': c = '\r'; break;
+                    case '\'': c = '\''; break;
+                    case '"': c = '"'; break;
+                    case '\\': c = '\\'; break;
+                    default:
+                        throw SeaError(fileName, startLine, startCol, "Unexpected escape sequence!");
+                }
+            }
+            
+            strLiteral += c;
+        }
+        Expect('"', "Expected closing '\"' for string literal!");
+        tokenList.emplace_back(TokenType::STRING_LITERAL,
+                    strLiteral, fileName, startLine, startCol);
+        return true;
+    }
+    return false;
 }
 
 bool Lexer::MatchIdentifier() {
@@ -136,15 +219,42 @@ bool Lexer::MatchNumber() {
     return false;
 }
 
+bool Lexer::MatchComment() {
+    if (iterator.Match("//")) {
+        while (!iterator.IsEnd() && iterator.Peek() != '\n') {
+            iterator.Advance();
+        }
+        return true;
+    }
+    return false;
+}
+
+bool Lexer::MatchWhitespace() {
+    if (std::isspace(iterator.Peek())) {
+        iterator.Advance();
+        return true;
+    }
+    return false;
+}
+
+
 void Lexer::Lex() {
     while (!iterator.IsEnd()) {
-        if (MatchKeyword()) { }
+        // LOG_DEBUG("Line " << (iterator.GetLine() + 1) <<
+        //           " Col " << (iterator.GetCol() + 1));
+
+        if (MatchComment()) { }
+        else if (MatchWhitespace()) { }
+        else if (MatchKeyword()) { }
         else if (MatchNumber()) { }
+        else if (MatchStringLiteral()) { }
+        else if (MatchCharLiteral()) { }
         else if (MatchIdentifier()) { }
         else {
+            // LOG_DEBUG(ListToString(tokenList, "\n"));
             throw SeaError(fileName, iterator.GetLine(), iterator.GetCol(),
-                "Could not match character '" + std::to_string(iterator.Peek()) +
-                "' during lexing.");
+                "Unexpected character '" + std::string(1, iterator.Peek()) +
+                "'!");
         }
     }
 }
@@ -160,7 +270,7 @@ void FileSourceIterator::Advance() {
     col += 1;
     if (col >= source.srcLines.at(line).size()) {
         col = 0;
-    line += 1;
+        line += 1;
     }
 }
 
@@ -171,9 +281,12 @@ char FileSourceIterator::Peek() {
     return source.srcLines.at(line).at(col);
 }
 
+
 bool FileSourceIterator::Match(char c) {
     if (IsEnd()) return false;
     if (Peek() == c) {
+        lastMatchLine = line;
+        lastMatchCol = col;
         Advance();
         lastMatch = std::string(1, c);
         return true;
