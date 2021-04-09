@@ -1,9 +1,11 @@
 // Standard Libraries
 import <stdio>
 
+handler
 fun main() {
-	val x = 1
-	val y = 2
+	Int x = 1;
+	Int y = 2;
+
 	printf("Hello World %d!", x + y)
 }
 

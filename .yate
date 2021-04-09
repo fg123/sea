@@ -1,11 +1,15 @@
 paneset 0 0 190 52 1 0
-tabset 0 0 190 52 4 1
+tabset 0 0 190 52 6 5
 paneset 0 1 190 51 1 0
-editor 0 1 190 51 ./src/main.c 0 0
+editor 0 1 190 51 src/lexer.cc 0 0
 paneset 0 1 190 51 1 0
-editor 0 1 190 51 ./src/lexer.h 10 0
+editor 0 1 190 51 src/main.cc 1 0
 paneset 0 1 190 51 1 0
-editor 0 1 190 51 ./src/lexer.c 0 0
+editor 0 1 190 51 src/lexer.h 0 0
 paneset 0 1 190 51 1 0
-editor 0 1 190 51 ./src/token.h 7 0
+editor 0 1 190 51 src/token.h 5 0
+paneset 0 1 190 51 1 0
+editor 0 1 190 51 Makefile 0 0
+paneset 0 1 190 51 1 0
+editor 0 1 190 51 ./tests/sea_project/main.sea 3 7
 

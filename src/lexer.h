@@ -1,14 +1,60 @@
-#ifndef LEXER_H
-#define LEXER_H
+#pragma once
 
-struct Lexer
-{
+#include "Token.h"
+#include "Error.h"
+#include "CompilationContext.h"
 
+#include <vector>
+#include <string>
+#include <fstream>
+#include <streambuf>
+
+class FileSourceIterator {
+    const FileSource& source;
+    std::string lastMatch;
+    size_t lastMatchLine = 0;
+    size_t lastMatchCol = 0;
+
+    size_t line = 0;
+    size_t col = 0;
+public:
+    FileSourceIterator(const FileSource& source) : source(source) {}
+
+    bool IsEnd();
+    void Advance();
+
+    char Peek();
+    bool Match(char c);
+    bool Match(std::string str);
+
+    std::string PeekWord();
+
+    std::string GetLastMatch() { return lastMatch; }
+    size_t GetLastMatchLine() { return lastMatchLine; }
+    size_t GetLastMatchCol() { return lastMatchCol; }
+
+    size_t GetLine() { return line; }
+    size_t GetCol() { return col; }
 };
 
-struct Lexer* lexer_init();
+class Lexer {
+    std::vector<Token> tokenList;
+    FileSourceIterator iterator;
+    std::string fileName;
 
+    bool MatchKeyword();
+    bool MatchNumber();
+    bool MatchIdentifier();
 
-void lexer_destroy(struct Lexer* lexer);
+public:
+    Lexer(CompilationContext& context, const std::string& fileName) :
+        iterator(context.files[fileName]),
+        fileName(fileName) {
 
-#endif
+    }
+
+    void Lex();
+
+    const std::vector<Token>& GetTokenList() { return tokenList; }
+};
+

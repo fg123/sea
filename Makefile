@@ -1,21 +1,17 @@
-CC=gcc
-SRC=src
-WARN=-Wall -Wextra -Werror -Wstrict-prototypes -Wmissing-prototypes -Wno-return-void -Wimplicit-function-declaration
-CFLAGS=-std=c99 $(WARN)
+CC=g++
+SRC=$(wildcard $(SRCDIR)/*.cc)
+OBJ = $(SRC:%.c=%.o)
+SRCDIR=src
+WARN=-Wall -Wextra -Werror -Wno-return-void
+CPPFLAGS=-std=c++11 $(WARN)
 
-_DEPS=*.h
-DEPS=$(patsubst %,$(SRC)/%,$(_DEPS))
-
-_OBJ=main.o
-OBJ=$(patsubst %,$(SRC)/%,$(_OBJ))
-
-$(ODIR)/%.o: $(SRC)/%.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS)
+$(SRCDIR)/%.o: $(SRCDIR)/%.cc $(DEPS)
+	$(CXX) -c -o $@ $< $(CPPFLAGS)
 
 main: $(OBJ)
-	$(CC) -o seac $^ $(CFLAGS)
+	$(CXX) -o bin/sea $^ $(CPPFLAGS)
 
 .PHONY: clean
 
 clean:
-	rm -f $(SRC)/*.o 
+	rm -f $(SRCDIR)/*.o
