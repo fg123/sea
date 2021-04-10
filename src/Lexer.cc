@@ -13,18 +13,22 @@ bool Lexer::MatchKeyword() {
     else MATCH_KEYWORD("catch", TokenType::CATCH)
     else MATCH_KEYWORD("class", TokenType::CLASS)
     else MATCH_KEYWORD("const", TokenType::CONST)
+    else MATCH_KEYWORD("let", TokenType::LET)
     else MATCH_KEYWORD("continue", TokenType::CONTINUE)
     else MATCH_KEYWORD("do", TokenType::DO)
     else MATCH_KEYWORD("else", TokenType::ELSE)
     else MATCH_KEYWORD("extends", TokenType::EXTENDS)
     else MATCH_KEYWORD("final", TokenType::FINAL)
     else MATCH_KEYWORD("finally", TokenType::FINALLY)
-    else MATCH_KEYWORD("float", TokenType::FLOAT)
+    else MATCH_KEYWORD("function", TokenType::FUNCTION)
     else MATCH_KEYWORD("for", TokenType::FOR)
     else MATCH_KEYWORD("if", TokenType::IF)
     else MATCH_KEYWORD("implements", TokenType::IMPLEMENTS)
     else MATCH_KEYWORD("import", TokenType::IMPORT)
+    else MATCH_KEYWORD("as?", TokenType::SAFE_AS)
+    else MATCH_KEYWORD("as", TokenType::AS)
     else MATCH_KEYWORD("is", TokenType::IS)
+    else MATCH_KEYWORD("in", TokenType::IN)
     else MATCH_KEYWORD("interface", TokenType::INTERFACE)
     else MATCH_KEYWORD("new", TokenType::NEW)
     else MATCH_KEYWORD("public", TokenType::PUBLIC)
@@ -49,6 +53,7 @@ bool Lexer::MatchKeyword() {
     else MATCH_KEYWORD("!=" ,TokenType::NE)
     else MATCH_KEYWORD("&&" ,TokenType::AND)
     else MATCH_KEYWORD("||" ,TokenType::OR)
+    else MATCH_KEYWORD("->" ,TokenType::RANGE)
     else MATCH_KEYWORD("++" ,TokenType::INC)
     else MATCH_KEYWORD("--" ,TokenType::DEC)
     else MATCH_KEYWORD("+=" ,TokenType::ADD_EQ)
@@ -56,6 +61,7 @@ bool Lexer::MatchKeyword() {
     else MATCH_KEYWORD("*=" ,TokenType::MULT_EQ)
     else MATCH_KEYWORD("/=" ,TokenType::DIV_EQ)
     else MATCH_KEYWORD("%=" ,TokenType::DIV_EQ)
+    else MATCH_KEYWORD('?:' ,TokenType::ELVIS)
     else MATCH_KEYWORD('(' ,TokenType::LPAREN)
     else MATCH_KEYWORD(')' ,TokenType::RPAREN)
     else MATCH_KEYWORD('{' ,TokenType::LBRACE)
@@ -257,10 +263,12 @@ void Lexer::Lex() {
                 "'!");
         }
     }
+    tokenList.emplace_back(TokenType::END_OF_FILE, "", fileName, iterator.GetLine(), iterator.GetCol());
 }
 
 bool FileSourceIterator::IsEnd() {
-    return line >= source.srcLines.size();
+    // Add a newline at the very end
+    return line >= source.srcLines.size() - 1;
 }
 
 void FileSourceIterator::Advance() {

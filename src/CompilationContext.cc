@@ -21,6 +21,7 @@ void CompilationContext::AddSourceFile(const std::string& fileName) {
     while (std::getline(stream, line)) {
         file.srcLines.push_back(line + "\n");
     }
+    file.srcLines.push_back("\n");
 }
 
 void CompilationContext::PrintSourceForError(const std::string& fileName, size_t line, size_t col) {

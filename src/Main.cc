@@ -1,6 +1,7 @@
 #include "CompilationContext.h"
 #include "Lexer.h"
 #include "Util.h"
+#include "Parser.h"
 
 #include <iostream>
 
@@ -61,13 +62,15 @@ int main(int argc, char *argv[]) {
 			if (context.GetOption(SeaOption::PRINT_TOKENS)) {
 				std::cout << ListToString(tokens, "\n") << std::endl;
 			}
+			Parser parser (tokens);
+			std::unique_ptr<CompilationUnit> unit = parser.Parse();
 			// std::unique_ptr<CompilationUnit> unit = ShiftReduceParser(context).Parse(tokens, file);
 
 			// Weeder weeder;
 			// weeder.Start(unit.get());
 			
 			// Transfer the CompilationUnit into the context
-			// context.compilationUnits.push_back(std::move(unit));
+			context.compilationUnits.push_back(std::move(unit));
 		}
 
 		// // Links Types to their Declaration Nodes

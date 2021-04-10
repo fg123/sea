@@ -27,3 +27,13 @@ compilation, and a set of `.h/.cc` files for C++ compilation.
 
 # Control Flow
 Standard control flow, but also has pattern matching?
+
+# Statements
+
+## Local Variable Declaration
+```
+const x = 10;        // Type Deduction
+const y : Long = 10; // Specify Type
+let z = 10;          // Mutable Value
+let z : Long = 10;   // Mutable Value with specific type
+```

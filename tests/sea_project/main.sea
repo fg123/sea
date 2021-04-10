@@ -1,11 +1,14 @@
 // Standard Libraries
-import <stdio>
+import "stdio.h"
 
-handler
-fun main() {
-	Int x = 1;
-	Int y = 2;
+public function main() : Int {
+	const x : Int = 1;
+	const y : Int = 2;
 
-	printf("Hello World %d!", x + y)
+	let z = 10;
+
+	printf("Hello World %d!", x + y);
+
+	return x + y;
 }
 

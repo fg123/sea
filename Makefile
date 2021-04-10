@@ -1,9 +1,10 @@
 CC=g++
-SRC=$(wildcard $(SRCDIR)/*.cc)
-OBJ = $(SRC:%.cc=%.o)
 SRCDIR=src
+SRC=$(wildcard $(SRCDIR)/*.cc)
+DEPS=$(wildcard $(SRCDIR)/*.h)
+OBJ = $(SRC:%.cc=%.o)
 WARN=-Wall -Wextra -Werror
-CPPFLAGS=-std=c++14 $(WARN) -g
+CPPFLAGS=-std=c++17 $(WARN) -g
 
 $(SRCDIR)/%.o: $(SRCDIR)/%.cc $(DEPS)
 	$(CXX) -c -o $@ $< $(CPPFLAGS)

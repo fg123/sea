@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <memory>
 
-// #include "Parser.h"
+#include "Parser.h"
 
 enum class SeaOption : int {
     PRINT_TOKENS,
@@ -26,7 +26,7 @@ class CompilationContext {
     std::unordered_map<SeaOption, bool> options;
 
 public:
-    // std::vector<std::unique_ptr<CompilationUnit>> compilationUnits;
+    std::vector<std::unique_ptr<CompilationUnit>> compilationUnits;
     std::map<std::string, FileSource> files;
 
     CompilationContext() {}

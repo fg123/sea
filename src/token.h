@@ -3,6 +3,7 @@
 #include "Util.h"
 
 #define FOREACH_TOKEN(OP)               \
+  OP(END_OF_FILE),                      \
   OP(IDENTIFIER),                       \
   /* Keywords */                        \
   OP(BREAK),                            \
@@ -10,15 +11,19 @@
   OP(CATCH),                            \
   OP(CLASS),                            \
   OP(CONST),                            \
+  OP(LET),                              \
   OP(CONTINUE),                         \
   OP(DO),                               \
   OP(ELSE),                             \
   OP(EXTENDS),                          \
   OP(FINAL),                            \
   OP(FINALLY),                          \
-  OP(FLOAT),                            \
+  OP(FUNCTION),                         \
   OP(FOR),                              \
   OP(IF),                               \
+  OP(IN),                               \
+  OP(AS),                               \
+  OP(SAFE_AS),                          \
   OP(IMPLEMENTS),                       \
   OP(IMPORT),                           \
   OP(IS),                               \
@@ -53,7 +58,9 @@
   OP(COMMA),                            \
   OP(DOT),                              \
   /* Operators */                       \
+  OP(RANGE),                            \
   OP(QUESTION),                         \
+  OP(ELVIS),                            \
   OP(ASSIGNMENT),                       \
   OP(GT),                               \
   OP(LT),                               \
