@@ -78,8 +78,6 @@ Statement* Parser::ParseStatement() {
         while (!Match(TokenType::RBRACE)) {
             stmt->statements.push_back(ParseStatement());
         }
-        // Don't check for semicolon
-        return stmt;
     }
     else {
         // Try Matching an expression statement
@@ -87,22 +85,27 @@ Statement* Parser::ParseStatement() {
         stmt->expression = ParseExpression();
         outStatement = stmt;
     }
-    Expect(TokenType::SEMICOLON, "Expected ';' to denote end of statement");
+    Match(TokenType::SEMICOLON);
+    // Expect(TokenType::SEMICOLON, "Expected ';' to denote end of statement");
     return outStatement;
 }
 
 FunctionDeclaration* Parser::ParseFunctionDeclaration() {
     // LOG_DEBUG("Parse Function Declaration");
     FunctionDeclaration* decl = MakeNode<FunctionDeclaration>();
+    if (Match(TokenType::OPERATOR)) {
+        decl->isOperator = true;
+    }
     const Token& idToken = Expect(TokenType::IDENTIFIER, "Expected identifier");
     decl->id = idToken.value;
     Expect(TokenType::LPAREN, "Expected '(' to start argument list");
     if (!Match(TokenType::RPAREN)) {
         do {
             FunctionArgument fArg;
-            fArg.argumentType = ParseType();
             const Token& argName = Expect(TokenType::IDENTIFIER, "Expected argument name");
             fArg.id = argName.value;
+            Expect(TokenType::COLON, "Argument type must be specified");
+            fArg.argumentType = ParseType();
             decl->arguments.push_back(fArg);
         }
         while (Match(TokenType::COMMA));
@@ -113,7 +116,9 @@ FunctionDeclaration* Parser::ParseFunctionDeclaration() {
         decl->returnType = ParseType();
     }
 
-    decl->body = ParseStatement();
+    if (!Match(TokenType::SEMICOLON)) {
+        decl->body = ParseStatement();
+    }
     return decl;
 }
 
@@ -123,9 +128,29 @@ ClassDeclaration* Parser::ParseClassDeclaration() {
     const Token& idToken = Expect(TokenType::IDENTIFIER, "Expected identifier");
     decl->id = idToken.value;
     
+    if (Match(TokenType::EXTENDS)) {
+        decl->extendsType = ParseType();
+    }
+
+    if (Match(TokenType::IMPLEMENTS)) {
+        do {
+            decl->implementsInterfaces.push_back(ParseType());
+        }
+        while (Match(TokenType::COMMA));
+    }
+
     Expect(TokenType::LBRACE, "Expected class body declarations!");
-    while (!IsEnd() && Peek() == TokenType::RBRACE) {
-        decl->declarations.push_back(ParseFunctionDeclaration());
+    while (!IsEnd() && Peek() != TokenType::RBRACE) {
+        bool isPublic = false;
+        if (Match(TokenType::PUBLIC)) {
+            isPublic = true;
+        }
+        FunctionDeclaration* fn = TryParseFunctionDeclaration();
+        if (!fn) {
+            throw SEA_ERROR("Expected function declaration in class");
+        }
+        fn->isPublic = isPublic;
+        decl->declarations.push_back(fn);
     }
     Expect(TokenType::RBRACE, "Expected '}'!");
     return decl;
@@ -137,24 +162,49 @@ InterfaceDeclaration* Parser::ParseInterfaceDeclaration() {
     const Token& idToken = Expect(TokenType::IDENTIFIER, "Expected identifier");
     decl->id = idToken.value;
     
+    if (Match(TokenType::EXTENDS)) {
+        do {
+            decl->extendsInterfaces.push_back(ParseType());
+        } while (Match(TokenType::COMMA));
+    }
+
     Expect(TokenType::LBRACE, "Expected class body declarations!");
-    while (!IsEnd() && Peek() == TokenType::RBRACE) {
-        decl->declarations.push_back(ParseFunctionDeclaration());
+    while (!IsEnd() && Peek() != TokenType::RBRACE) {
+        bool isPublic = false;
+        if (Match(TokenType::PUBLIC)) {
+            isPublic = true;
+        }
+        FunctionDeclaration* fn = TryParseFunctionDeclaration();
+        if (!fn) {
+            throw SEA_ERROR("Expected function declaration in interface");
+        }
+        fn->isPublic = isPublic;
+        decl->declarations.push_back(fn);
     }
     Expect(TokenType::RBRACE, "Expected '}'!");
     return decl;
 }
 
-    
+FunctionDeclaration* Parser::TryParseFunctionDeclaration() {
+    if (Match(TokenType::FUNCTION)) {
+        return ParseFunctionDeclaration();
+    }
+    else if (Match(TokenType::OPERATOR)) {
+        Expect(TokenType::FUNCTION, "Operator modifier is only valid on functions!");
+        return ParseFunctionDeclaration();
+    }
+    return nullptr;
+}
+
 Declaration* Parser::ParseDeclaration() {
     // LOG_DEBUG("Parse Declaration");
     bool isPublic = false;
     if (Match(TokenType::PUBLIC)) {
         isPublic = true;
     }
-    Declaration* decl = nullptr;
-    if (Match(TokenType::FUNCTION)) {
-        decl = ParseFunctionDeclaration();
+    Declaration* decl = TryParseFunctionDeclaration();
+    if (decl) {
+
     }
     else if (Match(TokenType::CLASS)) {
         decl = ParseClassDeclaration();
@@ -175,19 +225,19 @@ void Parser::ParseCompilationUnit() {
             const Token& token = Expect(TokenType::STRING_LITERAL,
                 "Expected string literal after import");
             ImportDeclaration decl;
-            decl.import = Name(token.value);
+            decl.import = token.value;
             compilationUnit->imports.push_back(decl);
         }
         else {
-            compilationUnit->declarations.push_back(
-                ParseDeclaration()
-            );
+            Declaration* decl = ParseDeclaration();
+            compilationUnit->declarations[decl->GetId()] = decl;
         }
     }
 }
 
 std::unique_ptr<CompilationUnit> Parser::Parse() {
     compilationUnit = std::make_unique<CompilationUnit>();
+    compilationUnit->fileName = tokenList[0].fileName;
     ParseCompilationUnit();
     return std::move(compilationUnit);
 }

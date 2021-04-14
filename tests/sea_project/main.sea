@@ -1,5 +1,4 @@
-// Standard Libraries
-import "stdio.h"
+import "library.sea"
 
 public function main() : Int {
 	const x : Int = 1;
@@ -7,7 +6,7 @@ public function main() : Int {
 
 	let z = 10;
 
-	printf("Hello World %d!", x + y);
+	print("Hello World !", x + y);
 
 	return x + y;
 }

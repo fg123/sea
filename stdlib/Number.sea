@@ -1,0 +1,9 @@
+public interface Number {
+    public function toByte() : Byte;
+    public function toChar() : Char;
+    public function toDouble() : Double;
+    public function toFloat() : Float;
+    public function toInt() : Int;
+    public function toLong() : Long;
+    public function toShort() : Short;
+}

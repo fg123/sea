@@ -13,8 +13,10 @@
 struct CompilationUnit : public ASTNode {
     // Owns Everything
     std::unordered_set<ASTNode*> allNodes;
-    std::vector<Declaration*> declarations;
+    std::unordered_map<std::string, Declaration*> declarations;
     std::vector<ImportDeclaration> imports;
+
+    std::unordered_map<std::string, TypeDeclaration*> knownTypes;
 
     CompilationUnit() {}
 
@@ -26,7 +28,7 @@ struct CompilationUnit : public ASTNode {
 
     AST_VISITOR_DEFN({
         for (auto& declaration : declarations) {
-            if (!declaration->Accept(visitor)) return false;
+            if (!declaration.second->Accept(visitor)) return false;
         }
     })
 };

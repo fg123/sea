@@ -37,3 +37,25 @@ const y : Long = 10; // Specify Type
 let z = 10;          // Mutable Value
 let z : Long = 10;   // Mutable Value with specific type
 ```
+
+# Interfaces
+Interfaces are declared with `interface`. They cannot contain any fields, but
+can contain base / reference implementations to methods.
+
+Interfaces can extend any number of sub-interfaces
+```
+public interface A {
+    function A (value : Int) {
+        return 0;
+    }
+}
+
+public interface B extends A {
+    override function A (value : Int) {
+        return 1;
+    }
+    function B (value : Int) {
+        return 2;
+    }
+};
+```

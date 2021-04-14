@@ -34,14 +34,17 @@ bool Lexer::MatchKeyword() {
     else MATCH_KEYWORD("public", TokenType::PUBLIC)
     else MATCH_KEYWORD("return", TokenType::RETURN)
     else MATCH_KEYWORD("static", TokenType::STATIC)
+    else MATCH_KEYWORD("native", TokenType::NATIVE)
     else MATCH_KEYWORD("super", TokenType::SUPER)
     else MATCH_KEYWORD("switch", TokenType::SWITCH)
     else MATCH_KEYWORD("this", TokenType::THIS)
     else MATCH_KEYWORD("throw", TokenType::THROW)
     else MATCH_KEYWORD("throws", TokenType::THROWS)
+    else MATCH_KEYWORD("when", TokenType::WHEN)
     else MATCH_KEYWORD("try", TokenType::TRY)
     else MATCH_KEYWORD("void", TokenType::VOID)
     else MATCH_KEYWORD("while", TokenType::WHILE)
+    else MATCH_KEYWORD("operator", TokenType::OPERATOR)
     else MATCH_KEYWORD("true", TokenType::TRUE_LITERAL)
     else MATCH_KEYWORD("false", TokenType::FALSE_LITERAL)
     else MATCH_KEYWORD("null", TokenType::NULL_LITERAL)
@@ -61,7 +64,8 @@ bool Lexer::MatchKeyword() {
     else MATCH_KEYWORD("*=" ,TokenType::MULT_EQ)
     else MATCH_KEYWORD("/=" ,TokenType::DIV_EQ)
     else MATCH_KEYWORD("%=" ,TokenType::DIV_EQ)
-    else MATCH_KEYWORD('?:' ,TokenType::ELVIS)
+    else MATCH_KEYWORD("?:" ,TokenType::ELVIS)
+    else MATCH_KEYWORD("?." ,TokenType::SAFE_DOT)
     else MATCH_KEYWORD('(' ,TokenType::LPAREN)
     else MATCH_KEYWORD(')' ,TokenType::RPAREN)
     else MATCH_KEYWORD('{' ,TokenType::LBRACE)
@@ -190,12 +194,14 @@ bool Lexer::MatchNumber() {
         size_t startLine = iterator.GetLine();
         size_t startCol = iterator.GetCol();
         std::string value;
+        TokenType type = TokenType::INT_LITERAL;
         while (!iterator.IsEnd() && std::isdigit(iterator.Peek())) {
             value += iterator.Peek();
             iterator.Advance();
         }
         if (iterator.Match('.')) {
             // Decimal?
+            type = TokenType::DOUBLE_LITERAL;
             value += iterator.GetLastMatch();
             while (!iterator.IsEnd() && std::isdigit(iterator.Peek())) {
                 value += iterator.Peek();
@@ -205,21 +211,17 @@ bool Lexer::MatchNumber() {
         // PostFixes
         if (iterator.Match('f')) {
             // Float Designator
-            value += iterator.GetLastMatch();
+            type = TokenType::FLOAT_LITERAL;
         }
         else if (iterator.Match('l')) {
             // Long Designator
-            value += iterator.GetLastMatch();
+            if (type != TokenType::INT_LITERAL) {
+                throw SeaError(fileName, iterator.GetLine(), iterator.GetCol(),
+                    "Cannot indicate 'long' on a decimal number!");
+            }
+            type = TokenType::LONG_LITERAL;
         }
-        else if (iterator.Match("ul")) {
-            // unsigned long Designator
-            value += iterator.GetLastMatch();
-        }
-        else if (iterator.Match("u")) {
-            // unsigned Designator
-            value += iterator.GetLastMatch();
-        }
-        tokenList.emplace_back(TokenType::NUMBER_LITERAL, value, fileName, startLine, startCol);
+        tokenList.emplace_back(type, value, fileName, startLine, startCol);
         return true;
     }
     return false;

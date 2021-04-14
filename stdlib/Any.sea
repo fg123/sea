@@ -1,0 +1,4 @@
+public class Any {
+    public operator function equals(other : Any?) : Boolean;
+    public function toString(): String;
+}

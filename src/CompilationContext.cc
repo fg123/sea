@@ -2,12 +2,21 @@
 
 #include "Error.h"
 #include "Util.h"
+#include "Lexer.h"
+#include "Parser.h"
+#include "PathTools.h"
 
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 
 void CompilationContext::AddSourceFile(const std::string& fileName) {
+    // CompilationUnitID
+    std::string compilationUnitId = PathTools::Basename(fileName);
+    if (compilationUnits.find(compilationUnitId) != compilationUnits.end()) {
+        throw GeneralError("Duplicate compilation unit: " + compilationUnitId);
+    }
+
     if (files.find(fileName) != files.end()) {
         throw GeneralError("Duplicate source file: " + fileName);
     }
@@ -22,6 +31,28 @@ void CompilationContext::AddSourceFile(const std::string& fileName) {
         file.srcLines.push_back(line + "\n");
     }
     file.srcLines.push_back("\n");
+
+    Lexer lexer { *this, fileName };
+    lexer.Lex();
+    std::vector<Token> tokens = lexer.GetTokenList();
+    if (GetOption(SeaOption::PRINT_TOKENS)) {
+        std::cout << ListToString(tokens, "\n") << std::endl;
+    }
+    if (tokens.empty()) {
+        throw GeneralError("File " + fileName + " has no contents!");
+    }
+    Parser parser (tokens);
+    std::unique_ptr<CompilationUnit> unit = parser.Parse();
+
+    compilationUnits[compilationUnitId] = std::move(unit);
+}
+
+CompilationUnit* CompilationContext::GetCompilationUnitByPath(const std::string& path) {
+    std::string compilationUnitId = PathTools::Basename(path);
+    if (compilationUnits.find(compilationUnitId) == compilationUnits.end()) {
+        AddSourceFile(path);
+    }
+    return compilationUnits[compilationUnitId].get();
 }
 
 void CompilationContext::PrintSourceForError(const std::string& fileName, size_t line, size_t col) {

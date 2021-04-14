@@ -5,10 +5,6 @@
 
 #include <optional>
 
-struct Statement : public ASTNode {
-    AST_VISITOR_DECL
-};
-
 struct LocalVariableDeclarationStatement : public Statement {
     bool isConstant = false;
 

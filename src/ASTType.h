@@ -19,12 +19,23 @@ struct Name {
 
 struct SeaType {
     Name name;
-    bool nullable = false;
     TypeDeclaration* type = nullptr;
+    bool isPrimitive = false;
+    bool nullable = false;
     SeaType() {}
+    explicit SeaType(TypeDeclaration* type) : SeaType(type, false) {}
+    SeaType(TypeDeclaration* type, bool isPrimitive) : type(type), isPrimitive(isPrimitive) {}
     SeaType(Name name, bool nullable) : name(name), nullable(nullable) {}
 
     std::string ToString() {
         return name.ToString() + (nullable ? "?" : "");
+    }
+
+    bool IsNothing() {
+        return type == nullptr;
+    }
+
+    void SetNothing() {
+        type = nullptr;
     }
 };

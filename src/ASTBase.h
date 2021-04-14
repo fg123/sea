@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ASTVisitor.h"
+#include "ASTType.h"
 
 struct ASTNode {
     ASTNode* parent = nullptr;
@@ -10,16 +11,15 @@ struct ASTNode {
     virtual ~ASTNode() {}
 };
 
-#define AST_VISITOR_DECL virtual bool Accept(ASTVisitor* visitor) = 0;
-#define AST_VISITOR_DEFN(...) virtual bool Accept(ASTVisitor* visitor) {       \
-    visitor->currentNode = this;                                               \
-    if (!visitor->PreVisit(this)) return false;                                \
-    if (!visitor->skipVisitChildren) {                                         \
-        visitor->PreVisitChildren();                                           \
-        __VA_ARGS__                                                            \
-        visitor->PostVisitChildren();                                          \
-    }                                                                          \
-    visitor->skipVisitChildren = false;                                        \
-    if(!visitor->PostVisit(this)) return false;                                \
-    return true;                                                               \
-}
+struct Statement : public ASTNode {
+    AST_VISITOR_DECL
+};
+
+struct Expression : public ASTNode {
+    // Filled out by TypeResolver
+    SeaType expressionType;
+    
+    virtual ~Expression() {}
+
+    AST_VISITOR_DECL
+};

@@ -19,7 +19,8 @@ class Parser {
 
     SeaType ParseType();
     Expression* MakeBinary(Expression* lhs, Expression* rhs, BinaryExpression::Operator op);
-    
+
+    Expression* ParseCallSuffix(Expression* lhs);
     Expression* ParsePrimaryExpression();
     Expression* ParseUnaryExpression();
     Expression* ParseAsExpression();
@@ -29,6 +30,7 @@ class Parser {
     Expression* ParseInfixFunctionCall();
     Expression* ParseElvisExpression();
     Expression* ParseInfixOperation();
+    Expression* ParseCallExpression();
     Expression* ParseComparison();
     Expression* ParseEquality();
     Expression* ParseConjunction();
@@ -37,6 +39,7 @@ class Parser {
     Expression* ParseExpression();
     Statement* ParseStatement();
 
+    FunctionDeclaration* TryParseFunctionDeclaration();
     FunctionDeclaration* ParseFunctionDeclaration();
     ClassDeclaration* ParseClassDeclaration();
     InterfaceDeclaration* ParseInterfaceDeclaration();

@@ -1,4 +1,5 @@
 #include "Parser.h"
+#include "Error.h"
 
 Expression* Parser::MakeBinary(Expression* lhs, Expression* rhs, BinaryExpression::Operator op) {
     BinaryExpression* result = MakeNode<BinaryExpression>();
@@ -23,10 +24,90 @@ BinaryExpression::Operator TokenToOperator(TokenType t) {
         case TokenType::MULT: return BinaryExpression::Operator::TIMES;
         case TokenType::DIV: return BinaryExpression::Operator::DIVIDE;
         case TokenType::MOD: return BinaryExpression::Operator::MODULO;
+        default: break;
     }
+    throw GeneralError("Invalid token to TokenToOperator: " + std::string(TokenTypeString[(int) t]));
 }
 
 Expression* Parser::ParsePrimaryExpression() {
+    if (Match(TokenType::LPAREN)) {
+        Expression* result = ParsePrimaryExpression();
+        Expect(TokenType::RPAREN, "Expected ')' to close '('");
+        return result;
+    }
+    else if (Match(TokenType::IDENTIFIER)) {
+        NameExpression* result = MakeNode<NameExpression>();
+        result->name = tokenList[ptr - 1].value;
+        return result;
+    }
+    else if (
+        Match(TokenType::INT_LITERAL) ||
+        Match(TokenType::LONG_LITERAL) ||
+        Match(TokenType::DOUBLE_LITERAL) ||
+        Match(TokenType::FLOAT_LITERAL) ||
+        Match(TokenType::CHAR_LITERAL) ||
+        Match(TokenType::NULL_LITERAL) ||
+        Match(TokenType::TRUE_LITERAL) ||
+        Match(TokenType::FALSE_LITERAL) ||
+        Match(TokenType::STRING_LITERAL)) {
+        LiteralExpression* result = MakeNode<LiteralExpression>();
+        result->token = tokenList[ptr - 1];
+        return result;
+    }
+    // Collection Literal
+    // Object Literal 
+    // Function Literal
+    else if (Match(TokenType::THIS)) {
+        return MakeNode<ThisExpression>();
+    }
+    else if (Match(TokenType::SUPER)) {
+        return MakeNode<SuperExpression>();
+    }
+    else if (Match(TokenType::IF)) {
+        IfExpression* ifExpression = MakeNode<IfExpression>();
+        Expect(TokenType::LPAREN, "Expected '(' after 'if'");
+        ifExpression->condition = ParseExpression();
+        Expect(TokenType::RPAREN, "Expected ')' after condition");
+        ifExpression->trueStatement = ParseStatement();
+        if (Match(TokenType::ELSE)) {
+            ifExpression->falseStatement = ParseStatement();
+        }
+        return ifExpression;
+    }
+    else if (Match(TokenType::WHEN)) {
+        WhenExpression* whenExpression = MakeNode<WhenExpression>();
+        if (Match(TokenType::LPAREN)) {
+            // When has a subject
+            if (Match(TokenType::CONST)) {
+                // When has a binding
+                const Token& idTok = Expect(TokenType::IDENTIFIER, "Expected identifier for 'when' subject binding");
+                whenExpression->bindingId = idTok.value;
+                Expect(TokenType::ASSIGNMENT, "Expected '=' after 'when' subject binding");
+            }
+            whenExpression->subject = ParseExpression();
+            Expect(TokenType::RPAREN, "Expected ')' after 'when' subject");
+        }
+        Expect(TokenType::LBRACE, "Expected '{' to start 'when' entries");
+        while (Peek() != TokenType::RBRACE) {
+            if (Match(TokenType::ELSE)) {
+                Expect(TokenType::RANGE, "Expected '->' for 'when' else case");
+                whenExpression->elseEntry = ParseStatement();
+                break;
+            }
+            WhenEntry entry;
+            do {
+                entry.tests.push_back(ParseExpression());
+            } while (Match(TokenType::COMMA));
+            Expect(TokenType::RANGE, "Expected '->' for 'when' entry");
+            entry.body = ParseStatement();
+            whenExpression->entries.push_back(entry);
+        }
+        Expect(TokenType::RBRACE, "Expected '}' to end 'when' entries");
+        return whenExpression;
+    }
+    // Try Expression TODO
+    throw SeaError(tokenList[ptr].fileName,
+        tokenList[ptr].lineNumber, tokenList[ptr].colNumber, "Could not parse expression!");
 }
 
 Expression* Parser::ParseUnaryExpression() {
@@ -64,6 +145,25 @@ Expression* Parser::ParseUnaryExpression() {
         }
         lhs = expr;
     }
+    else if (Match(TokenType::LPAREN)) {
+        // Call
+        lhs = ParseCallSuffix(lhs);
+    }
+    else if (Match(TokenType::LBRACKET)) {
+        // Index
+        Expression* expr = MakeBinary(lhs, ParseExpression(), BinaryExpression::Operator::GET);
+        Expect(TokenType::RBRACKET, "Expected ']' after indexing operator");
+        lhs = expr;
+    }
+    else if (Match(TokenType::DOT) || Match(TokenType::SAFE_DOT)) {
+        // Navigation
+        NavigationExpression* expr = MakeNode<NavigationExpression>();
+        expr->lhs = lhs;
+        expr->safeNavigation = (lastMatch == TokenType::SAFE_DOT);
+        const Token& idTok = Expect(TokenType::IDENTIFIER, "Expected identifier after '.'");
+        expr->id = idTok.value;
+        lhs = expr;
+    }
     return lhs;
 }
 
@@ -88,8 +188,9 @@ Expression* Parser::ParseAsExpression() {
 Expression* Parser::ParseMultiplicativeExpression() {
     Expression* lhs = ParseAsExpression();
     while (Match(TokenType::MULT) || Match(TokenType::DIV) || Match(TokenType::MOD)) {
+        TokenType savedLastMatch = lastMatch;
         Expression* rhs = ParseAsExpression();
-        lhs = MakeBinary(lhs, rhs, TokenToOperator(lastMatch));
+        lhs = MakeBinary(lhs, rhs, TokenToOperator(savedLastMatch));
     }
     return lhs;
 }
@@ -97,8 +198,9 @@ Expression* Parser::ParseMultiplicativeExpression() {
 Expression* Parser::ParseAdditiveExpression() {
     Expression* lhs = ParseMultiplicativeExpression();
     while (Match(TokenType::ADD) || Match(TokenType::SUB)) {
+        TokenType savedLastMatch = lastMatch;
         Expression* rhs = ParseMultiplicativeExpression();
-        lhs = MakeBinary(lhs, rhs, TokenToOperator(lastMatch));
+        lhs = MakeBinary(lhs, rhs, TokenToOperator(savedLastMatch));
     }
     return lhs;
 }
@@ -153,14 +255,35 @@ Expression* Parser::ParseInfixOperation() {
     return lhs;
 }
 
-Expression* Parser::ParseComparison() {
+Expression* Parser::ParseCallSuffix(Expression* lhs) {
+    CallExpression* result = MakeNode<CallExpression>();
+    result->lhs = lhs;
+    if (Peek() != TokenType::RPAREN) {
+        do {
+            result->args.push_back(ParseExpression());
+        } while (Match(TokenType::COMMA));
+    }
+    Expect(TokenType::RPAREN, "Expected ')' to end argument list");
+    return result;
+}
+
+Expression* Parser::ParseCallExpression() {
     Expression* lhs = ParseInfixOperation();
+    while (Match(TokenType::LPAREN)) {
+        lhs = ParseCallSuffix(lhs);
+    }
+    return lhs;
+}
+
+Expression* Parser::ParseComparison() {
+    Expression* lhs = ParseCallExpression();
     while (Match(TokenType::LT) ||
            Match(TokenType::GT) ||
            Match(TokenType::LE) || 
            Match(TokenType::GE)) {
-        Expression* rhs = ParseInfixOperation();
-        lhs = MakeBinary(lhs, rhs, TokenToOperator(lastMatch));
+        TokenType savedLastMatch = lastMatch;
+        Expression* rhs = ParseCallExpression();
+        lhs = MakeBinary(lhs, rhs, TokenToOperator(savedLastMatch));
     }
     return lhs;
 }
@@ -168,8 +291,9 @@ Expression* Parser::ParseComparison() {
 Expression* Parser::ParseEquality() {
     Expression* lhs = ParseComparison();
     while (Match(TokenType::EQ) || Match(TokenType::NE)) {
+        TokenType savedLastMatch = lastMatch;
         Expression* rhs = ParseComparison();
-        lhs = MakeBinary(lhs, rhs, TokenToOperator(lastMatch));
+        lhs = MakeBinary(lhs, rhs, TokenToOperator(savedLastMatch));
     }
     return lhs;
 }
@@ -193,6 +317,5 @@ Expression* Parser::ParseDisjunction() {
 }
 
 Expression* Parser::ParseExpression() {
-    Expression* outExpression;
     return ParseDisjunction();
 }

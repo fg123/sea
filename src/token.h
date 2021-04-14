@@ -31,7 +31,9 @@
   OP(NEW),                              \
   OP(PUBLIC),                           \
   OP(RETURN),                           \
+  OP(OPERATOR),                         \
   OP(STATIC),                           \
+  OP(NATIVE),                           \
   OP(SUPER),                            \
   OP(SWITCH),                           \
   OP(THIS),                             \
@@ -40,8 +42,12 @@
   OP(TRY),                              \
   OP(VOID),                             \
   OP(WHILE),                            \
+  OP(WHEN),                             \
   /* Literals */                        \
-  OP(NUMBER_LITERAL),                   \
+  OP(INT_LITERAL),                      \
+  OP(DOUBLE_LITERAL),                   \
+  OP(FLOAT_LITERAL),                    \
+  OP(LONG_LITERAL),                     \
   OP(TRUE_LITERAL),                     \
   OP(FALSE_LITERAL),                    \
   OP(CHAR_LITERAL),                     \
@@ -57,6 +63,7 @@
   OP(SEMICOLON),                        \
   OP(COMMA),                            \
   OP(DOT),                              \
+  OP(SAFE_DOT),                         \
   /* Operators */                       \
   OP(RANGE),                            \
   OP(QUESTION),                         \

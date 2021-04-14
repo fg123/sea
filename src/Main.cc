@@ -1,7 +1,8 @@
 #include "CompilationContext.h"
-#include "Lexer.h"
 #include "Util.h"
-#include "Parser.h"
+#include "ImportResolver.h"
+#include "TypeResolver.h"
+#include "Error.h"
 
 #include <iostream>
 
@@ -20,6 +21,18 @@ void Usage(const char* progName) {
 }
 
 void ProcessOptions(CompilationContext& context, int argc, char *argv[]) {
+	// Add Standard Libraries
+	context.AddSourceFile("stdlib/Int.sea");
+	context.AddSourceFile("stdlib/Byte.sea");
+	context.AddSourceFile("stdlib/Short.sea");
+	context.AddSourceFile("stdlib/Long.sea");
+	context.AddSourceFile("stdlib/Float.sea");
+	context.AddSourceFile("stdlib/Double.sea");
+	context.AddSourceFile("stdlib/Boolean.sea");
+	context.AddSourceFile("stdlib/Char.sea");
+	context.AddSourceFile("stdlib/String.sea");
+	context.AddSourceFile("stdlib/Any.sea");
+
 	for (int i = 1; i < argc; i++) {
 		std::string arg { argv[i] };
 		if (arg == "--token-list") {
@@ -53,25 +66,10 @@ int main(int argc, char *argv[]) {
 	try {
 		ProcessOptions(context, argc, argv);
 
-		// Parse and Weed Each File
-		for (const auto &filePair : context.files) {
-			auto& file = filePair.first;
-			Lexer lexer {context, file};
-			lexer.Lex();
-			std::vector<Token> tokens = lexer.GetTokenList();
-			if (context.GetOption(SeaOption::PRINT_TOKENS)) {
-				std::cout << ListToString(tokens, "\n") << std::endl;
-			}
-			Parser parser (tokens);
-			std::unique_ptr<CompilationUnit> unit = parser.Parse();
-			// std::unique_ptr<CompilationUnit> unit = ShiftReduceParser(context).Parse(tokens, file);
+		// Resolves all the class / types known to each unit
+		ImportResolver importResolver { context };
 
-			// Weeder weeder;
-			// weeder.Start(unit.get());
-			
-			// Transfer the CompilationUnit into the context
-			context.compilationUnits.push_back(std::move(unit));
-		}
+		TypeResolver typeResolver { context };
 
 		// // Links Types to their Declaration Nodes
 		// TypeLinker typeLinker(context);
@@ -91,9 +89,9 @@ int main(int argc, char *argv[]) {
 
 		// ReachabilityChecker reachabilityChecker(context);
 
-		// if (context.GetOption(JooscOption::PRINT_AST)) {
-		// 	context.DebugPrintAllAst(std::cout);
-		// }
+		if (context.GetOption(SeaOption::PRINT_AST)) {
+			context.DebugPrintAllAst(std::cout);
+		}
 
 		// // Assign ids to anything that needs it
 		// IdAssigner idAssigner(context);

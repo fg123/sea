@@ -1,0 +1,3 @@
+public function factorial(i : Int) : Int {
+    return if (i == 0) 1 else i * factorial(i - 1);
+}

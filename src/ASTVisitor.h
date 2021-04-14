@@ -1,26 +1,67 @@
 #pragma once
 
+#include "Error.h"
+
 // Declarations
-class CompilationUnit;
-class ASTNode;
-class ClassDeclaration;
-class InterfaceDeclaration;
-class FunctionDeclaration;
+struct CompilationUnit;
+struct ASTNode;
+struct ClassDeclaration;
+struct InterfaceDeclaration;
+struct FunctionDeclaration;
 
 // Expressions
-class BinaryExpression;
-class BinaryTypeExpression;
-class UnaryExpression;
-class IfExpression;
-class WhenExpression;
+struct LiteralExpression;
+struct BinaryExpression;
+struct BinaryTypeExpression;
+struct UnaryExpression;
+struct IfExpression;
+struct WhenExpression;
+struct TryExpression;
+struct InfixCallExpression;
+struct SuperExpression;
+struct ThisExpression;
+struct NameExpression;
+struct CallExpression;
+struct NavigationExpression;
 
 // Statements
-class WhileStatement;
-class ReturnStatement;
-class ForStatement;
-class BlockStatement;
-class LocalVariableDeclarationStatement;
-class ExpressionStatement;
+struct WhileStatement;
+struct ReturnStatement;
+struct ForStatement;
+struct BlockStatement;
+struct LocalVariableDeclarationStatement;
+struct ExpressionStatement;
+
+#define AST_DECL_ACCEPTOR(type) \
+    virtual bool PreVisit (type) { return true; } \
+    virtual bool PostVisit(type) { return true; } \
+    virtual bool PreVisitChild(type, unsigned int) { return true; } \
+    virtual bool PostVisitChild(type, unsigned int) { return true; }
+
+
+#define AST_VISITOR_DECL virtual bool Accept(ASTVisitor* visitor) = 0;
+#define AST_VISITOR_DEFN(...) virtual bool Accept(ASTVisitor* visitor) {       \
+    visitor->currentNode = this;                                               \
+    if (!visitor->PreVisit(this)) return false;                                \
+    if (!visitor->skipVisitChildren) {                                         \
+        unsigned int childCounter = 0;                                               \
+        UNUSED(childCounter);                                                  \
+        visitor->PreVisitChildren();                                           \
+        __VA_ARGS__                                                            \
+        visitor->PostVisitChildren();                                          \
+    }                                                                          \
+    visitor->skipVisitChildren = false;                                        \
+    if(!visitor->PostVisit(this)) return false;                                \
+    return true;                                                               \
+}
+
+#define AST_VISIT_CHILD(field) {                                               \
+    if (visitor->PreVisitChild(this, childCounter)) {                          \
+        if ((field) && !(field)->Accept(visitor)) return false;                \
+        visitor->PostVisitChild(this, childCounter);                           \
+        childCounter += 1;                                                     \
+    }                                                                          \
+}
 
 class ASTVisitor {
 public:
@@ -29,62 +70,38 @@ public:
     bool skipVisitChildren = false;
 
     void Start(CompilationUnit* base);
-    
-    virtual void PreVisitChildren() {}
-    virtual void PostVisitChildren() {}
+
+    virtual void PreVisitChildren() { }
+    virtual void PostVisitChildren() { }
+
+    SeaError VisitorError(const std::string& message);
 
     // Declarations
-    virtual bool PreVisit (CompilationUnit*) { return true; }
-    virtual bool PostVisit(CompilationUnit*) { return true; }
-    virtual bool PreVisit (ClassDeclaration*) { return true; }
-    virtual bool PostVisit(ClassDeclaration*) { return true; }
-    virtual bool PreVisit (InterfaceDeclaration*) { return true; }
-    virtual bool PostVisit(InterfaceDeclaration*) { return true; }
-    virtual bool PreVisit (FunctionDeclaration*) { return true; }
-    virtual bool PostVisit(FunctionDeclaration*) { return true; }
+    AST_DECL_ACCEPTOR(CompilationUnit*)
+    AST_DECL_ACCEPTOR(ClassDeclaration*)
+    AST_DECL_ACCEPTOR(InterfaceDeclaration*)
+    AST_DECL_ACCEPTOR(FunctionDeclaration*)
 
     // Expressions
-    virtual bool PreVisit (BinaryExpression*) { return true; }
-    virtual bool PostVisit(BinaryExpression*) { return true; }
-    virtual bool PreVisit (BinaryTypeExpression*) { return true; }
-    virtual bool PostVisit(BinaryTypeExpression*) { return true; }
-    virtual bool PreVisit (UnaryExpression*) { return true; }
-    virtual bool PostVisit(UnaryExpression*) { return true; }
-    virtual bool PreVisit (IfExpression*) { return true; }
-    virtual bool PostVisit(IfExpression*) { return true; }
-    virtual bool PreVisit (WhenExpression*) { return true; }
-    virtual bool PostVisit(WhenExpression*) { return true; }
-    // virtual bool PreVisit(ClassInstanceCreationExpression*) { return true; }
-    // virtual bool PostVisit(ClassInstanceCreationExpression*) { return true; }
-    // virtual bool PreVisit(ArrayAccessExpression*) { return true; }
-    // virtual bool PostVisit(ArrayAccessExpression*) { return true; }
-    // virtual bool PreVisit(AmbiguousNameExpression*) { return true; }
-    // virtual bool PostVisit(AmbiguousNameExpression*) { return true; }
-    // virtual bool PreVisit(ThisExpression*) { return true; }
-    // virtual bool PostVisit(ThisExpression*) { return true; }
-    // virtual bool PreVisit(LiteralExpression*) { return true; }
-    // virtual bool PostVisit(LiteralExpression*) { return true; }
-    // virtual bool PreVisit(FieldAccessExpression*) { return true; }
-    // virtual bool PostVisit(FieldAccessExpression*) { return true; }
-    // virtual bool PreVisit(MethodInvocationExpression*) { return true; }
-    // virtual bool PostVisit(MethodInvocationExpression*) { return true; }
-    // virtual bool PreVisit(AssignmentExpression*) { return true; }
-    // virtual bool PostVisit(AssignmentExpression*) { return true; }
-    // virtual bool PreVisit(VariableExpression*) { return true; }
-    // virtual bool PostVisit(VariableExpression*) { return true; }
+    AST_DECL_ACCEPTOR(LiteralExpression*)
+    AST_DECL_ACCEPTOR(BinaryExpression*)
+    AST_DECL_ACCEPTOR(BinaryTypeExpression*)
+    AST_DECL_ACCEPTOR(UnaryExpression*)
+    AST_DECL_ACCEPTOR(IfExpression*)
+    AST_DECL_ACCEPTOR(WhenExpression*)
+    AST_DECL_ACCEPTOR(InfixCallExpression*)
+    AST_DECL_ACCEPTOR(TryExpression*)
+    AST_DECL_ACCEPTOR(ThisExpression*)
+    AST_DECL_ACCEPTOR(SuperExpression*)
+    AST_DECL_ACCEPTOR(NameExpression*)
+    AST_DECL_ACCEPTOR(CallExpression*)
+    AST_DECL_ACCEPTOR(NavigationExpression*)
 
     // Statements
-    virtual bool PreVisit (WhileStatement*) { return true; }
-    virtual bool PostVisit(WhileStatement*) { return true; }
-    virtual bool PreVisit (ReturnStatement*) { return true; }
-    virtual bool PostVisit(ReturnStatement*) { return true; }
-    virtual bool PreVisit (ForStatement*) { return true; }
-    virtual bool PostVisit(ForStatement*) { return true; }
-    virtual bool PreVisit (BlockStatement*) { return true; }
-    virtual bool PostVisit(BlockStatement*) { return true; }
-    virtual bool PreVisit (LocalVariableDeclarationStatement*) { return true; }
-    virtual bool PostVisit(LocalVariableDeclarationStatement*) { return true; }
-    virtual bool PreVisit (ExpressionStatement*) { return true; }
-    virtual bool PostVisit(ExpressionStatement*) { return true; }
-    
+    AST_DECL_ACCEPTOR(WhileStatement*)
+    AST_DECL_ACCEPTOR(ReturnStatement*)
+    AST_DECL_ACCEPTOR(ForStatement*)
+    AST_DECL_ACCEPTOR(BlockStatement*)
+    AST_DECL_ACCEPTOR(LocalVariableDeclarationStatement*)
+    AST_DECL_ACCEPTOR(ExpressionStatement*)
 };
